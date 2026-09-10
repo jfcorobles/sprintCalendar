@@ -53,6 +53,14 @@ const GoogleCalendar = (() => {
           GoogleAuth.signOut();
           return [];
         }
+        if (response.status === 403) {
+          const errData = await response.json().catch(() => ({}));
+          console.error('GoogleCalendar: Error 403 Forbidden. Asegúrate de habilitar Google Calendar API en Google Cloud Console:', errData);
+          if (typeof App !== 'undefined' && App.showToast) {
+            App.showToast('Error 403: Habilita la "Google Calendar API" en tu Google Cloud Console.', 'error', 6000);
+          }
+          return [];
+        }
         throw new Error(`API error: ${response.status}`);
       }
 

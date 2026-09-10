@@ -9,7 +9,7 @@ const GoogleAuth = (() => {
   // Create an OAuth 2.0 Client ID (Web application type)
   // Add your deployment URL to Authorized JavaScript origins
   const CLIENT_ID = '196494881282-5tdlac2r3hmlkfhv7bqto4jv41akccgi.apps.googleusercontent.com';
-  const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+  const SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly';
 
   let accessToken = null;
   let tokenClient = null;
