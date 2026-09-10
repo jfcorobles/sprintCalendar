@@ -10,7 +10,7 @@ const Storage = (() => {
     sprintDuration: 14,       // days (7, 14, 21, 28)
     sprintStartDate: null,    // ISO date string or null
     theme: 'dark',            // 'light', 'dark', 'system'
-    googleClientId: '',       // Google OAuth Client ID string
+    googleClientId: '196494881282-5tdlac2r3hmlkfhv7bqto4jv41akccgi.apps.googleusercontent.com',
   };
 
   /**

@@ -8,8 +8,8 @@ const GoogleAuth = (() => {
   // Go to: https://console.cloud.google.com/apis/credentials
   // Create an OAuth 2.0 Client ID (Web application type)
   // Add your deployment URL to Authorized JavaScript origins
-  // Enable the Google Calendar API in your project
-  let clientId = Storage.getConfig('googleClientId') || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  const DEFAULT_CLIENT_ID = '196494881282-5tdlac2r3hmlkfhv7bqto4jv41akccgi.apps.googleusercontent.com';
+  let clientId = Storage.getConfig('googleClientId') || DEFAULT_CLIENT_ID;
   const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 
   let accessToken = null;
