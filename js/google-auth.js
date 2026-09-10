@@ -9,7 +9,7 @@ const GoogleAuth = (() => {
   // Create an OAuth 2.0 Client ID (Web application type)
   // Add your deployment URL to Authorized JavaScript origins
   // Enable the Google Calendar API in your project
-  const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  let clientId = Storage.getConfig('googleClientId') || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
   const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 
   let accessToken = null;
@@ -21,6 +21,8 @@ const GoogleAuth = (() => {
    * Initialize Google Identity Services
    */
   function init() {
+    clientId = Storage.getConfig('googleClientId') || clientId;
+
     // Load GIS library dynamically
     if (document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
       setupTokenClient();
@@ -41,17 +43,37 @@ const GoogleAuth = (() => {
   }
 
   /**
+   * Set or update Client ID dynamically
+   */
+  function setClientId(newId) {
+    clientId = newId ? newId.trim() : '';
+    setupTokenClient();
+  }
+
+  /**
+   * Get current Client ID
+   */
+  function getClientId() {
+    return clientId;
+  }
+
+  /**
    * Set up the token client after GIS loads
    */
   function setupTokenClient() {
     if (typeof google === 'undefined' || !google.accounts) {
-      console.warn('GoogleAuth: Google Identity Services not available');
+      return;
+    }
+
+    if (!clientId || clientId.includes('YOUR_GOOGLE_CLIENT_ID')) {
+      tokenClient = null;
+      isInitialized = false;
       return;
     }
 
     try {
       tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
+        client_id: clientId,
         scope: SCOPES,
         callback: handleTokenResponse,
       });
@@ -81,13 +103,25 @@ const GoogleAuth = (() => {
    * Start the sign-in flow
    */
   function signIn() {
-    if (!isInitialized || !tokenClient) {
-      showToast('Google Auth no está disponible. Recarga la página.', 'error');
+    clientId = Storage.getConfig('googleClientId') || clientId;
+
+    if (!clientId || clientId.includes('YOUR_GOOGLE_CLIENT_ID')) {
+      showToast('Por favor ingresa tu Google Client ID en Configuración ⚙️', 'error');
+      // Highlight settings
+      const clientIdInput = document.getElementById('google-client-id');
+      if (clientIdInput) {
+        Modal.open('modal-settings');
+        clientIdInput.focus();
+      }
       return;
     }
 
-    if (CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) {
-      showToast('Configura tu Google Client ID en js/google-auth.js', 'error');
+    if (!tokenClient) {
+      setupTokenClient();
+    }
+
+    if (!tokenClient) {
+      showToast('No se pudo inicializar Google Auth con el Client ID proporcionado.', 'error');
       return;
     }
 
@@ -174,5 +208,8 @@ const GoogleAuth = (() => {
     getAccessToken,
     onAuthChange,
     updateAuthUI,
+    setClientId,
+    getClientId,
   };
 })();
+

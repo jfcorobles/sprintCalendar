@@ -72,12 +72,16 @@ const App = (() => {
 
     const durationSelect = document.getElementById('sprint-duration');
     const startDateInput = document.getElementById('sprint-start-date');
+    const clientIdInput = document.getElementById('google-client-id');
 
     if (durationSelect) {
       durationSelect.value = String(config.sprintDuration);
     }
     if (startDateInput && config.sprintStartDate) {
       startDateInput.value = config.sprintStartDate;
+    }
+    if (clientIdInput) {
+      clientIdInput.value = config.googleClientId || '';
     }
 
     // Update Google auth UI
@@ -90,11 +94,16 @@ const App = (() => {
   function saveSettings() {
     const duration = parseInt(document.getElementById('sprint-duration')?.value || '14', 10);
     const startDate = document.getElementById('sprint-start-date')?.value || null;
+    const clientId = document.getElementById('google-client-id')?.value?.trim() || '';
 
     Storage.setMultiple({
       sprintDuration: duration,
       sprintStartDate: startDate,
+      googleClientId: clientId,
     });
+
+    // Update GoogleAuth client with the new Client ID
+    GoogleAuth.setClientId(clientId);
 
     // Re-render calendar with new sprint config
     Calendar.refresh();
