@@ -226,6 +226,82 @@
       </div>
     </div>
 
+    <!-- ====== DAY VIEW / DETALLE DEL DIA MODAL ====== -->
+    <div class="modal-overlay" id="modal-day-view" aria-hidden="true">
+      <div class="modal modal--day-view" role="dialog" aria-modal="true" aria-labelledby="day-view-title">
+        <div class="modal__header">
+          <div>
+            <span class="modal__subtitle" id="day-view-sprint-badge">Sprint</span>
+            <h2 class="modal__title" id="day-view-title">Detalle del Día</h2>
+          </div>
+          <button class="modal__close" data-modal-close aria-label="Cerrar">✕</button>
+        </div>
+        <div class="modal__body">
+          <div class="day-events-list" id="day-events-list">
+            <!-- Events rendered dynamically -->
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--secondary" data-modal-close>Cerrar</button>
+          <button class="btn btn--primary" id="btn-day-view-add-event">
+            + Añadir evento
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== EVENT DETAIL MODAL ====== -->
+    <div class="modal-overlay" id="modal-event-detail" aria-hidden="true">
+      <div class="modal modal--event-detail" role="dialog" aria-modal="true" aria-labelledby="event-detail-title">
+        <div class="modal__header">
+          <h2 class="modal__title" id="event-detail-title">Detalle del Evento</h2>
+          <button class="modal__close" data-modal-close aria-label="Cerrar">✕</button>
+        </div>
+        <div class="modal__body">
+          <div class="event-detail-content">
+            <h3 class="event-detail__summary" id="event-detail-summary">Título</h3>
+            <div class="event-detail__meta">
+              <div class="event-detail__item">
+                <span class="event-detail__icon">📅</span>
+                <span id="event-detail-time">Fecha y hora</span>
+              </div>
+              <div class="event-detail__item" id="event-detail-sprint-item">
+                <span class="event-detail__icon">🏃‍♂️</span>
+                <span id="event-detail-sprint">Sprint info</span>
+              </div>
+              <div class="event-detail__item" id="event-detail-location-item" style="display: none;">
+                <span class="event-detail__icon">📍</span>
+                <span id="event-detail-location"></span>
+              </div>
+            </div>
+            <div class="event-detail__description" id="event-detail-description-container" style="display: none;">
+              <h4 class="event-detail__label">Descripción</h4>
+              <p class="event-detail__description-text" id="event-detail-description"></p>
+            </div>
+          </div>
+        </div>
+        <div class="modal__footer modal__footer--between">
+          <button class="btn btn--ghost btn--danger" id="btn-delete-event" title="Eliminar evento">
+            🗑️ Eliminar
+          </button>
+          <div class="modal__footer-actions">
+            <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn--secondary btn--sm" id="btn-open-google-cal" style="display: none;">
+              Abrir en Google ↗
+            </a>
+            <button class="btn btn--primary" data-modal-close>Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== FLOATING ACTION BUTTON ====== -->
+    <button class="fab-btn" id="fab-add-event" aria-label="Crear nuevo evento" title="Crear nuevo evento">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+
     <!-- ====== TOAST CONTAINER ====== -->
     <div class="toast-container" id="toast-container" aria-live="polite"></div>
 

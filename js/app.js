@@ -23,6 +23,9 @@ const App = (() => {
     // 5. Connect event handlers
     bindSettingsModal();
     bindCreateEventModal();
+    bindDayViewModal();
+    bindEventDetailModal();
+    bindFabButton();
     bindGoogleAuthButtons();
 
     // 6. Listen for auth changes (manual sign in / sign out)
@@ -207,6 +210,60 @@ const App = (() => {
         createBtn.disabled = false;
       }
     }
+  }
+
+  /**
+   * Bind Day View Modal interactions
+   */
+  function bindDayViewModal() {
+    document.getElementById('btn-day-view-add-event')?.addEventListener('click', () => {
+      const selectedDate = Calendar.getSelectedDateForDayView();
+      Modal.close('modal-day-view');
+      Calendar.openCreateEventModal(selectedDate);
+    });
+  }
+
+  /**
+   * Bind Event Detail Modal interactions (Delete event)
+   */
+  function bindEventDetailModal() {
+    document.getElementById('btn-delete-event')?.addEventListener('click', async () => {
+      const selectedEvent = Calendar.getSelectedEventForDetail();
+      if (!selectedEvent) return;
+
+      const confirmDelete = confirm(`¿Estás seguro de que deseas eliminar el evento "${selectedEvent.title}"?`);
+      if (!confirmDelete) return;
+
+      const deleteBtn = document.getElementById('btn-delete-event');
+      if (deleteBtn) {
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Eliminando...';
+      }
+
+      try {
+        await GoogleCalendar.deleteEvent(selectedEvent.id);
+        Modal.close('modal-event-detail');
+        await Calendar.loadEvents();
+        showToast('Evento eliminado exitosamente', 'success');
+      } catch (err) {
+        showToast('Error al eliminar el evento', 'error');
+      } finally {
+        if (deleteBtn) {
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = '🗑️ Eliminar';
+        }
+      }
+    });
+  }
+
+  /**
+   * Bind Floating Action Button (FAB)
+   */
+  function bindFabButton() {
+    document.getElementById('fab-add-event')?.addEventListener('click', () => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      Calendar.openCreateEventModal(todayStr);
+    });
   }
 
   /**

@@ -187,20 +187,55 @@ const GoogleCalendar = (() => {
   }
 
   /**
-   * Parse a Google Calendar API event into our simplified format.
+   * Delete an event by ID
+   * 
+   * @param {string} eventId
+   * @returns {Promise<boolean>}
+   */
+  async function deleteEvent(eventId) {
+    if (!GoogleAuth.isAuthenticated()) {
+      throw new Error('Not authenticated');
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/calendars/primary/events/${eventId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${GoogleAuth.getAccessToken()}`,
+          },
+        }
+      );
+
+      if (!response.ok && response.status !== 204 && response.status !== 404 && response.status !== 410) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      // Clear cache to refresh
+      clearCache();
+      return true;
+    } catch (error) {
+      console.error('GoogleCalendar: Failed to delete event', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Parse a Google Calendar API event into our rich format.
    */
   function parseEvent(apiEvent) {
-    const isAllDay = !apiEvent.start.dateTime;
+    const isAllDay = !apiEvent.start?.dateTime;
 
     let date, startTime, endTime;
 
     if (isAllDay) {
-      date = apiEvent.start.date; // "YYYY-MM-DD"
+      date = apiEvent.start?.date || ''; // "YYYY-MM-DD"
       startTime = null;
       endTime = null;
     } else {
       const start = new Date(apiEvent.start.dateTime);
-      const end = new Date(apiEvent.end.dateTime);
+      const end = new Date(apiEvent.end?.dateTime || apiEvent.start.dateTime);
       date = start.toISOString().split('T')[0];
       startTime = start.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: false });
       endTime = end.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -209,6 +244,10 @@ const GoogleCalendar = (() => {
     return {
       id: apiEvent.id,
       title: apiEvent.summary || '(Sin título)',
+      description: apiEvent.description || '',
+      location: apiEvent.location || '',
+      htmlLink: apiEvent.htmlLink || '',
+      hangoutLink: apiEvent.hangoutLink || '',
       date,
       startTime,
       endTime,
@@ -217,17 +256,27 @@ const GoogleCalendar = (() => {
   }
 
   /**
-   * Get events for a specific date from the cache.
+   * Get events for a specific date from cache
    * 
    * @param {string} dateStr - "YYYY-MM-DD"
-   * @param {number} year
-   * @param {number} month - 0-indexed
    * @returns {Array}
    */
-  function getEventsForDate(dateStr, year, month) {
-    const cacheKey = `${year}-${month}`;
-    const events = eventsCache[cacheKey] || [];
-    return events.filter(e => e.date === dateStr);
+  function getCachedEventsForDate(dateStr) {
+    const results = [];
+    const seenIds = new Set();
+
+    Object.values(eventsCache).forEach(eventList => {
+      if (Array.isArray(eventList)) {
+        eventList.forEach(e => {
+          if (e.date === dateStr && !seenIds.has(e.id)) {
+            seenIds.add(e.id);
+            results.push(e);
+          }
+        });
+      }
+    });
+
+    return results;
   }
 
   /**
@@ -244,7 +293,8 @@ const GoogleCalendar = (() => {
     getEventsForRange,
     getEventsForMonth,
     createEvent,
-    getEventsForDate,
+    deleteEvent,
+    getCachedEventsForDate,
     clearCache,
   };
 })();

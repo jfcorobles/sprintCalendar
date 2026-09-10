@@ -296,56 +296,64 @@
 /* Mobile (< 640px) */
 @media (max-width: 639px) {
   .header {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 
+      "brand actions"
+      "nav nav";
     gap: var(--space-2);
-  }
-
-  .header__nav {
-    order: -1;
-    width: 100%;
-    justify-content: space-between;
+    align-items: center;
   }
 
   .header__brand {
-    order: -2;
-    width: 100%;
-    justify-content: center;
+    grid-area: brand;
+    font-size: var(--text-base);
   }
 
   .header__actions {
+    grid-area: actions;
+    justify-content: flex-end;
+  }
+
+  .header__nav {
+    grid-area: nav;
     width: 100%;
-    justify-content: center;
+    justify-content: space-between;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: 2px 4px;
   }
 
   .header__month-display {
-    font-size: var(--text-lg);
+    font-size: var(--text-base);
     min-width: auto;
     flex: 1;
   }
 
   .calendar__day {
-    min-height: 60px;
-    padding: var(--space-1);
+    min-height: 72px;
+    padding: 4px 2px;
+    gap: 2px;
   }
 
   .calendar__day-number {
-    font-size: var(--text-xs);
-    width: 22px;
-    height: 22px;
+    font-size: 11px;
+    width: 20px;
+    height: 20px;
   }
 
   .calendar__weekday {
-    font-size: var(--text-xs);
-    padding: var(--space-1);
+    font-size: 11px;
+    padding: 4px 0;
   }
 
   .app__main {
-    padding: var(--space-3) 0;
+    padding: var(--space-2) 0;
   }
 
   .modal {
     max-width: 100%;
-    max-height: 100vh;
+    max-height: 95vh;
     border-radius: var(--radius-lg);
     margin: var(--space-2);
   }
@@ -356,9 +364,9 @@
 
   .sprint-legend {
     gap: var(--space-3);
-    flex-direction: column;
-    align-items: flex-start;
-    padding-left: var(--space-4);
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: var(--space-3) 0;
   }
 }
 

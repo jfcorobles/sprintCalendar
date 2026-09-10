@@ -107,6 +107,10 @@ const Calendar = (() => {
     render();
   }
 
+  let currentEvents = [];
+  let selectedDateForDayView = null;
+  let selectedEventForDetail = null;
+
   /**
    * Main render function
    */
@@ -265,23 +269,30 @@ const Calendar = (() => {
 
     grid.innerHTML = html;
 
-    // Bind day clicks to open create event modal
+    // Bind day clicks to open Day View (Detalle del Día)
     grid.querySelectorAll('.calendar__day').forEach(day => {
-      day.addEventListener('click', () => {
+      day.addEventListener('click', (e) => {
+        // If an event badge was directly clicked, don't trigger day view here
+        if (e.target.closest('.event-badge')) return;
         const date = day.dataset.date;
-        openCreateEventModal(date);
+        openDayView(date);
       });
 
       day.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           const date = day.dataset.date;
-          openCreateEventModal(date);
+          openDayView(date);
         }
       });
     });
 
     slideDirection = null;
+
+    // If we have cached/current events, re-render them into the new cells
+    if (currentEvents.length > 0) {
+      renderEvents(currentEvents);
+    }
   }
 
   /**
@@ -290,6 +301,7 @@ const Calendar = (() => {
   async function loadEvents() {
     try {
       const events = await GoogleCalendar.getEventsForRange(currentGridRange.startDate, currentGridRange.endDate);
+      currentEvents = events;
       renderEvents(events);
     } catch (e) {
       console.warn('Calendar: Failed to load events', e);
@@ -297,15 +309,21 @@ const Calendar = (() => {
   }
 
   /**
-   * Render events into the calendar day cells (Refined SaaS Pills)
+   * Render events into the calendar day cells
    */
   function renderEvents(events) {
+    currentEvents = events;
     const eventsByDate = {};
     events.forEach(event => {
       if (!eventsByDate[event.date]) {
         eventsByDate[event.date] = [];
       }
       eventsByDate[event.date].push(event);
+    });
+
+    // Clear all event containers in grid first
+    document.querySelectorAll('.calendar__day-events').forEach(el => {
+      el.innerHTML = '';
     });
 
     Object.keys(eventsByDate).forEach(dateStr => {
@@ -322,7 +340,9 @@ const Calendar = (() => {
         const timeHtml = !isAllDay && event.startTime ? `<span class="event-badge__time">${event.startTime}</span>` : '';
 
         html += `
-          <div class="${badgeClass}" title="${escapeHtml(event.title)}${!isAllDay && event.startTime ? ' · ' + event.startTime + '–' + event.endTime : ' (Todo el día)'}">
+          <div class="${badgeClass}" 
+               data-event-id="${event.id}"
+               title="${escapeHtml(event.title)}${!isAllDay && event.startTime ? ' · ' + event.startTime + '–' + event.endTime : ' (Todo el día)'}">
             <span class="event-badge__dot"></span>
             ${timeHtml}
             <span class="event-badge__title">${escapeHtml(event.title)}</span>
@@ -331,11 +351,191 @@ const Calendar = (() => {
       });
 
       if (dayEvents.length > maxVisible) {
-        html += `<div class="event-badge event-badge--more">+${dayEvents.length - maxVisible} más</div>`;
+        html += `<div class="event-badge event-badge--more" data-date="${dateStr}">+${dayEvents.length - maxVisible} más</div>`;
       }
 
       container.innerHTML = html;
     });
+
+    // Bind click events on event pills to open event detail
+    document.querySelectorAll('.event-badge[data-event-id]').forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const eventId = badge.dataset.eventId;
+        openEventDetail(eventId);
+      });
+    });
+
+    // Bind click on "+N más" to open day view
+    document.querySelectorAll('.event-badge--more').forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dateStr = badge.dataset.date;
+        openDayView(dateStr);
+      });
+    });
+  }
+
+  /**
+   * Open the Day View Modal (Detalle del Día)
+   */
+  function openDayView(dateStr) {
+    selectedDateForDayView = dateStr;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+
+    const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dayName = DAY_NAMES[dateObj.getDay()];
+    const monthName = MONTH_NAMES[dateObj.getMonth()];
+
+    // Title & Sprint badge
+    const titleEl = document.getElementById('day-view-title');
+    const sprintBadgeEl = document.getElementById('day-view-sprint-badge');
+    const eventsListEl = document.getElementById('day-events-list');
+
+    if (titleEl) {
+      titleEl.textContent = `${dayName}, ${d} de ${monthName} ${y}`;
+    }
+
+    if (sprintBadgeEl) {
+      const sprint = Sprint.getSprintForDate(dateObj);
+      if (sprint) {
+        sprintBadgeEl.textContent = `Sprint ${sprint.number}${sprint.isActive ? ' (Activo)' : ''} · Día ${sprint.dayInSprint} de ${sprint.totalDays}`;
+        sprintBadgeEl.className = sprint.isActive ? 'modal__subtitle modal__subtitle--active' : 'modal__subtitle';
+        sprintBadgeEl.style.display = '';
+      } else {
+        sprintBadgeEl.style.display = 'none';
+      }
+    }
+
+    // Filter events for this day
+    const dayEvents = currentEvents.filter(e => e.date === dateStr);
+
+    if (eventsListEl) {
+      if (dayEvents.length === 0) {
+        eventsListEl.innerHTML = `
+          <div class="day-events-empty">
+            <span class="day-events-empty__icon">📅</span>
+            <p class="day-events-empty__text">No hay eventos programados para este día.</p>
+          </div>
+        `;
+      } else {
+        let itemsHtml = '';
+        dayEvents.forEach(event => {
+          const isAllDay = event.isAllDay;
+          const timeDisplay = isAllDay ? 'Todo el día' : `${event.startTime || ''} – ${event.endTime || ''}`;
+          const pillClass = isAllDay ? 'day-event-card__pill day-event-card__pill--allday' : 'day-event-card__pill';
+
+          itemsHtml += `
+            <div class="day-event-card" data-event-id="${event.id}">
+              <div class="${pillClass}"></div>
+              <div class="day-event-card__content">
+                <div class="day-event-card__title">${escapeHtml(event.title)}</div>
+                <div class="day-event-card__time">⏰ ${timeDisplay}</div>
+                ${event.location ? `<div class="day-event-card__location">📍 ${escapeHtml(event.location)}</div>` : ''}
+              </div>
+              <span class="day-event-card__arrow">→</span>
+            </div>
+          `;
+        });
+        eventsListEl.innerHTML = itemsHtml;
+
+        // Bind clicks on each event card in day view
+        eventsListEl.querySelectorAll('.day-event-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const eventId = card.dataset.eventId;
+            Modal.close('modal-day-view');
+            openEventDetail(eventId);
+          });
+        });
+      }
+    }
+
+    Modal.open('modal-day-view');
+  }
+
+  /**
+   * Open the Event Detail Modal (Detalle del Evento)
+   */
+  function openEventDetail(eventId) {
+    const event = currentEvents.find(e => e.id === eventId);
+    if (!event) {
+      console.warn('Calendar: Event not found for id', eventId);
+      return;
+    }
+
+    selectedEventForDetail = event;
+
+    const summaryEl = document.getElementById('event-detail-summary');
+    const timeEl = document.getElementById('event-detail-time');
+    const sprintEl = document.getElementById('event-detail-sprint');
+    const sprintItemEl = document.getElementById('event-detail-sprint-item');
+    const locationEl = document.getElementById('event-detail-location');
+    const locationItemEl = document.getElementById('event-detail-location-item');
+    const descEl = document.getElementById('event-detail-description');
+    const descContainer = document.getElementById('event-detail-description-container');
+    const googleLinkBtn = document.getElementById('btn-open-google-cal');
+
+    if (summaryEl) summaryEl.textContent = event.title;
+
+    // Date and time formatting
+    if (timeEl) {
+      const [y, m, d] = event.date.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const dayName = DAY_NAMES[dateObj.getDay()];
+      const monthName = MONTH_NAMES[dateObj.getMonth()];
+
+      if (event.isAllDay) {
+        timeEl.textContent = `${dayName}, ${d} de ${monthName} ${y} · Todo el día`;
+      } else {
+        timeEl.textContent = `${dayName}, ${d} de ${monthName} ${y} · ${event.startTime} – ${event.endTime}`;
+      }
+    }
+
+    // Sprint info
+    if (sprintEl && sprintItemEl) {
+      const [y, m, d] = event.date.split('-').map(Number);
+      const sprint = Sprint.getSprintForDate(new Date(y, m - 1, d));
+      if (sprint) {
+        sprintEl.textContent = `Sprint ${sprint.number}${sprint.isActive ? ' (Activo)' : ''} · Día ${sprint.dayInSprint} de ${sprint.totalDays}`;
+        sprintItemEl.style.display = 'flex';
+      } else {
+        sprintItemEl.style.display = 'none';
+      }
+    }
+
+    // Location
+    if (locationEl && locationItemEl) {
+      if (event.location) {
+        locationEl.textContent = event.location;
+        locationItemEl.style.display = 'flex';
+      } else {
+        locationItemEl.style.display = 'none';
+      }
+    }
+
+    // Description
+    if (descEl && descContainer) {
+      if (event.description && event.description.trim()) {
+        descEl.textContent = event.description;
+        descContainer.style.display = 'block';
+      } else {
+        descContainer.style.display = 'none';
+      }
+    }
+
+    // Google Calendar Link
+    if (googleLinkBtn) {
+      if (event.htmlLink) {
+        googleLinkBtn.href = event.htmlLink;
+        googleLinkBtn.style.display = 'inline-flex';
+      } else {
+        googleLinkBtn.style.display = 'none';
+      }
+    }
+
+    Modal.open('modal-event-detail');
   }
 
   /**
@@ -361,7 +561,7 @@ const Calendar = (() => {
   function openCreateEventModal(dateStr) {
     const dateInput = document.getElementById('event-date');
     if (dateInput) {
-      dateInput.value = dateStr;
+      dateInput.value = dateStr || formatDateStr(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
     }
 
     const isAuthed = GoogleAuth.isAuthenticated();
@@ -406,6 +606,7 @@ const Calendar = (() => {
    * Escape HTML
    */
   function escapeHtml(str) {
+    if (!str) return '';
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
@@ -424,7 +625,7 @@ const Calendar = (() => {
    * Get current state
    */
   function getState() {
-    return { focusDate, currentGridRange };
+    return { focusDate, currentGridRange, currentEvents, selectedDateForDayView, selectedEventForDetail };
   }
 
   return {
@@ -435,6 +636,11 @@ const Calendar = (() => {
     refresh,
     render,
     loadEvents,
+    openDayView,
+    openEventDetail,
+    openCreateEventModal,
+    getSelectedDateForDayView: () => selectedDateForDayView,
+    getSelectedEventForDetail: () => selectedEventForDetail,
     getState,
   };
 })();
