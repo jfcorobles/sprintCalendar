@@ -179,6 +179,7 @@
 
 .calendar__day--sprint-active:hover {
   background: rgba(0, 122, 204, 0.22);
+  box-shadow: inset 0 0 0 1px var(--color-primary), inset 0 2px 0 var(--sprint-active-border);
 }
 
 /* Sprint inactive */
@@ -190,13 +191,28 @@
   color: var(--sprint-inactive-text);
 }
 
+.calendar__day--sprint-inactive:hover {
+  background: var(--bg-surface-hover);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
 /* Weekend */
 .calendar__day--weekend {
   background: rgba(0, 0, 0, 0.2);
 }
 
+.calendar__day--weekend:hover {
+  background: var(--bg-surface-hover);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
 .calendar__day--weekend.calendar__day--sprint-active {
   background: var(--sprint-active-bg);
+}
+
+.calendar__day--weekend.calendar__day--sprint-active:hover {
+  background: rgba(0, 122, 204, 0.22);
+  box-shadow: inset 0 0 0 1px var(--color-primary), inset 0 2px 0 var(--sprint-active-border);
 }
 
 /* ============================================================
