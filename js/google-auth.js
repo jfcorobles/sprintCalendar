@@ -8,8 +8,7 @@ const GoogleAuth = (() => {
   // Go to: https://console.cloud.google.com/apis/credentials
   // Create an OAuth 2.0 Client ID (Web application type)
   // Add your deployment URL to Authorized JavaScript origins
-  const DEFAULT_CLIENT_ID = '196494881282-5tdlac2r3hmlkfhv7bqto4jv41akccgi.apps.googleusercontent.com';
-  let clientId = Storage.getConfig('googleClientId') || DEFAULT_CLIENT_ID;
+  const CLIENT_ID = '196494881282-5tdlac2r3hmlkfhv7bqto4jv41akccgi.apps.googleusercontent.com';
   const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 
   let accessToken = null;
@@ -21,8 +20,6 @@ const GoogleAuth = (() => {
    * Initialize Google Identity Services
    */
   function init() {
-    clientId = Storage.getConfig('googleClientId') || clientId;
-
     // Load GIS library dynamically
     if (document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
       setupTokenClient();
@@ -43,21 +40,6 @@ const GoogleAuth = (() => {
   }
 
   /**
-   * Set or update Client ID dynamically
-   */
-  function setClientId(newId) {
-    clientId = newId ? newId.trim() : '';
-    setupTokenClient();
-  }
-
-  /**
-   * Get current Client ID
-   */
-  function getClientId() {
-    return clientId;
-  }
-
-  /**
    * Set up the token client after GIS loads
    */
   function setupTokenClient() {
@@ -65,15 +47,9 @@ const GoogleAuth = (() => {
       return;
     }
 
-    if (!clientId || clientId.includes('YOUR_GOOGLE_CLIENT_ID')) {
-      tokenClient = null;
-      isInitialized = false;
-      return;
-    }
-
     try {
       tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
+        client_id: CLIENT_ID,
         scope: SCOPES,
         callback: handleTokenResponse,
       });
@@ -103,25 +79,12 @@ const GoogleAuth = (() => {
    * Start the sign-in flow
    */
   function signIn() {
-    clientId = Storage.getConfig('googleClientId') || clientId;
-
-    if (!clientId || clientId.includes('YOUR_GOOGLE_CLIENT_ID')) {
-      showToast('Por favor ingresa tu Google Client ID en Configuración ⚙️', 'error');
-      // Highlight settings
-      const clientIdInput = document.getElementById('google-client-id');
-      if (clientIdInput) {
-        Modal.open('modal-settings');
-        clientIdInput.focus();
-      }
-      return;
-    }
-
     if (!tokenClient) {
       setupTokenClient();
     }
 
     if (!tokenClient) {
-      showToast('No se pudo inicializar Google Auth con el Client ID proporcionado.', 'error');
+      showToast('Cargando servicios de Google... Intenta de nuevo en unos segundos.', 'info');
       return;
     }
 
@@ -208,8 +171,7 @@ const GoogleAuth = (() => {
     getAccessToken,
     onAuthChange,
     updateAuthUI,
-    setClientId,
-    getClientId,
   };
 })();
+
 
