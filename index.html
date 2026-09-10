@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sprint Calendar — Visualiza tus sprints sobre un calendario mensual integrado con Google Calendar. PWA gratuita y open source.">
+  <meta name="theme-color" content="#0f0f1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Sprint Calendar">
+  <meta property="og:description" content="Visualiza tus sprints sobre un calendario mensual integrado con Google Calendar.">
+  <meta property="og:type" content="website">
+
+  <title>Sprint Calendar</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div class="app" id="app">
+
+    <!-- ====== HEADER ====== -->
+    <header class="app__header">
+      <div class="container">
+        <div class="header">
+          <div class="header__brand">
+            <span class="header__brand-icon">🏃‍♂️</span>
+            <span>Sprint Calendar</span>
+          </div>
+
+          <nav class="header__nav" aria-label="Navegación del calendario">
+            <button class="btn btn--icon btn--ghost" id="btn-prev-month" aria-label="Mes anterior" title="Mes anterior">
+              ←
+            </button>
+            <h1 class="header__month-display" id="month-display">Septiembre 2026</h1>
+            <button class="btn btn--icon btn--ghost" id="btn-next-month" aria-label="Mes siguiente" title="Mes siguiente">
+              →
+            </button>
+            <button class="btn btn--sm btn--secondary" id="btn-today" title="Ir al mes actual">
+              Hoy
+            </button>
+          </nav>
+
+          <div class="header__actions">
+            <button class="btn btn--icon btn--ghost" id="btn-settings" aria-label="Configuración" title="Configuración">
+              ⚙️
+            </button>
+            <div class="theme-toggle" role="radiogroup" aria-label="Selección de tema">
+              <button class="theme-toggle__option" data-theme="light" role="radio" aria-checked="false" aria-label="Tema claro" title="Tema claro">
+                ☀️
+              </button>
+              <button class="theme-toggle__option is-active" data-theme="dark" role="radio" aria-checked="true" aria-label="Tema oscuro" title="Tema oscuro">
+                🌙
+              </button>
+              <button class="theme-toggle__option" data-theme="system" role="radio" aria-checked="false" aria-label="Tema del sistema" title="Tema del sistema">
+                💻
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ====== MAIN CONTENT ====== -->
+    <main class="app__main">
+      <div class="container">
+        <!-- Calendar -->
+        <div class="calendar" role="grid" aria-label="Calendario mensual">
+          <!-- Weekday headers -->
+          <div class="calendar__weekdays" role="row">
+            <div class="calendar__weekday" role="columnheader">Lun</div>
+            <div class="calendar__weekday" role="columnheader">Mar</div>
+            <div class="calendar__weekday" role="columnheader">Mié</div>
+            <div class="calendar__weekday" role="columnheader">Jue</div>
+            <div class="calendar__weekday" role="columnheader">Vie</div>
+            <div class="calendar__weekday" role="columnheader">Sáb</div>
+            <div class="calendar__weekday" role="columnheader">Dom</div>
+          </div>
+
+          <!-- Calendar grid (rendered by JS) -->
+          <div class="calendar__grid" id="calendar-grid" role="rowgroup">
+            <!-- Days will be rendered here by calendar.js -->
+          </div>
+        </div>
+
+        <!-- Sprint Legend -->
+        <div class="sprint-legend" id="sprint-legend">
+          <div class="sprint-legend__item">
+            <span class="sprint-legend__dot sprint-legend__dot--active"></span>
+            <span class="sprint-legend__label" id="sprint-legend-active">Sprint activo</span>
+          </div>
+          <div class="sprint-legend__item">
+            <span class="sprint-legend__dot sprint-legend__dot--inactive"></span>
+            <span class="sprint-legend__label sprint-legend__label--muted">Otros sprints</span>
+          </div>
+          <div class="sprint-legend__item">
+            <span class="sprint-legend__dot sprint-legend__dot--today"></span>
+            <span class="sprint-legend__label sprint-legend__label--muted">Hoy</span>
+          </div>
+        </div>
+        <div class="sprint-legend__info" id="sprint-info"></div>
+      </div>
+    </main>
+
+    <!-- ====== SETTINGS MODAL ====== -->
+    <div class="modal-overlay" id="modal-settings" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="modal__header">
+          <h2 class="modal__title" id="settings-title">⚙️ Configuración</h2>
+          <button class="modal__close" data-modal-close aria-label="Cerrar configuración">✕</button>
+        </div>
+        <div class="modal__body">
+          <!-- Sprint Settings -->
+          <div class="form-group">
+            <label class="form-label" for="sprint-duration">Duración del sprint</label>
+            <select class="form-select" id="sprint-duration">
+              <option value="7">1 semana</option>
+              <option value="14" selected>2 semanas</option>
+              <option value="21">3 semanas</option>
+              <option value="28">4 semanas</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="sprint-start-date">Fecha de inicio del primer sprint</label>
+            <input type="date" class="form-input" id="sprint-start-date">
+            <span class="form-hint">Los sprints se calcularán a partir de esta fecha</span>
+          </div>
+
+          <hr class="separator">
+
+          <!-- Google Calendar Integration -->
+          <div class="form-group">
+            <label class="form-label">Google Calendar</label>
+            <div id="google-auth-container">
+              <div class="google-auth" id="google-auth-disconnected">
+                <span class="google-auth__icon">📅</span>
+                <p class="google-auth__text">Conecta tu Google Calendar para ver y crear eventos</p>
+                <button class="google-auth__btn" id="btn-google-connect" type="button">
+                  <svg class="google-auth__btn-logo" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                    <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+                    <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 2.58 9 3.58z" fill="#EA4335"/>
+                  </svg>
+                  Conectar con Google
+                </button>
+              </div>
+              <div class="google-auth google-auth--connected" id="google-auth-connected" style="display: none;">
+                <span class="google-auth__icon">✅</span>
+                <p class="google-auth__text">Google Calendar conectado</p>
+                <button class="btn btn--sm btn--secondary" id="btn-google-disconnect" type="button">
+                  Desconectar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--secondary" data-modal-close>Cancelar</button>
+          <button class="btn btn--primary" id="btn-save-settings">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== CREATE EVENT MODAL ====== -->
+    <div class="modal-overlay" id="modal-create-event" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="create-event-title">
+        <div class="modal__header">
+          <h2 class="modal__title" id="create-event-title">📅 Crear Evento</h2>
+          <button class="modal__close" data-modal-close aria-label="Cerrar">✕</button>
+        </div>
+        <div class="modal__body">
+          <div id="create-event-auth-warning" style="display: none;">
+            <div class="google-auth">
+              <span class="google-auth__icon">🔗</span>
+              <p class="google-auth__text">Conecta tu Google Calendar para crear eventos</p>
+              <button class="google-auth__btn" id="btn-google-connect-event" type="button">
+                <svg class="google-auth__btn-logo" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+                  <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                  <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 2.58 9 3.58z" fill="#EA4335"/>
+                </svg>
+                Conectar con Google
+              </button>
+            </div>
+          </div>
+
+          <form id="create-event-form">
+            <div class="form-group">
+              <label class="form-label" for="event-title">Título *</label>
+              <input type="text" class="form-input" id="event-title" placeholder="Ej: Daily standup" required>
+              <span class="form-error" id="event-title-error" style="display: none;">El título es requerido</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="event-date">Fecha</label>
+              <input type="date" class="form-input" id="event-date" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="event-start-time">Hora inicio</label>
+                <input type="time" class="form-input" id="event-start-time" value="09:00">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="event-end-time">Hora fin</label>
+                <input type="time" class="form-input" id="event-end-time" value="10:00">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="event-description">Descripción</label>
+              <textarea class="form-textarea" id="event-description" placeholder="Descripción opcional..."></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--secondary" data-modal-close>Cancelar</button>
+          <button class="btn btn--primary" id="btn-create-event">Crear Evento</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== TOAST CONTAINER ====== -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  </div>
+
+  <!-- ====== SCRIPTS ====== -->
+  <script src="js/storage.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/sprint.js"></script>
+  <script src="js/google-auth.js"></script>
+  <script src="js/google-calendar.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.warn('SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
