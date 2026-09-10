@@ -240,10 +240,10 @@ const Calendar = (() => {
         }
       }
 
-      // Format day number with month label if 1st of month (e.g. "1 Oct")
-      let displayHtml = `<span class="calendar__day-number">${dayNumber}</span>`;
+      // Format day header (number + optional subtle month tag)
+      let tagHtml = '';
       if (isFirstOfMonth) {
-        displayHtml = `<span class="calendar__day-number calendar__day-number--month-start">1 ${MONTH_ABBR[cellDate.getMonth()]}</span>`;
+        tagHtml = `<span class="calendar__day-tag">${MONTH_ABBR[cellDate.getMonth()]}</span>`;
       }
 
       const ariaLabel = buildAriaLabel(cellDate, dayNumber);
@@ -254,7 +254,10 @@ const Calendar = (() => {
              tabindex="0" 
              data-date="${dateStr}"
              aria-label="${ariaLabel}">
-          ${displayHtml}
+          <div class="calendar__day-header">
+            <span class="calendar__day-number">${dayNumber}</span>
+            ${tagHtml}
+          </div>
           <div class="calendar__day-events" id="events-${dateStr}"></div>
         </div>
       `;
@@ -294,7 +297,7 @@ const Calendar = (() => {
   }
 
   /**
-   * Render events into the calendar day cells
+   * Render events into the calendar day cells (Refined SaaS Pills)
    */
   function renderEvents(events) {
     const eventsByDate = {};
@@ -315,12 +318,13 @@ const Calendar = (() => {
 
       dayEvents.slice(0, maxVisible).forEach(event => {
         const isAllDay = event.isAllDay;
-        const timeDisplay = isAllDay ? 'Todo el día' : (event.startTime || '📅');
         const badgeClass = isAllDay ? 'event-badge event-badge--allday' : 'event-badge';
+        const timeHtml = !isAllDay && event.startTime ? `<span class="event-badge__time">${event.startTime}</span>` : '';
 
         html += `
-          <div class="${badgeClass}" title="${event.title}${!isAllDay && event.startTime ? ' · ' + event.startTime + '–' + event.endTime : ' · Todo el día'}">
-            <span class="event-badge__time">${timeDisplay}</span>
+          <div class="${badgeClass}" title="${escapeHtml(event.title)}${!isAllDay && event.startTime ? ' · ' + event.startTime + '–' + event.endTime : ' (Todo el día)'}">
+            <span class="event-badge__dot"></span>
+            ${timeHtml}
             <span class="event-badge__title">${escapeHtml(event.title)}</span>
           </div>
         `;

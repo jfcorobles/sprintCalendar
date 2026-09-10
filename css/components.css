@@ -123,34 +123,61 @@
    2. CALENDAR DAY STATES
    ============================================================ */
 
-/* Outside month (muted days from prev/next month) */
-.calendar__day--outside {
-  opacity: 0.35;
+.calendar__day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 2px;
 }
 
-.calendar__day--outside .calendar__day-number {
+.calendar__day-number {
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.calendar__day-tag {
+  font-size: 10px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
   color: var(--text-muted);
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-tertiary);
 }
 
 /* Today */
 .calendar__day--today .calendar__day-number {
-  background: var(--today-border);
-  color: var(--bg-primary);
+  background: var(--today-bg);
+  color: var(--today-text);
   font-weight: var(--font-bold);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
 }
 
-/* Sprint active */
+/* Sprint active (Refined Indigo Accent) */
 .calendar__day--sprint-active {
   background: var(--sprint-active-bg);
-  border-left: 3px solid var(--sprint-active-border);
+  box-shadow: inset 0 2px 0 var(--sprint-active-border);
 }
 
 .calendar__day--sprint-active .calendar__day-number {
   color: var(--sprint-active-text);
+  font-weight: var(--font-semibold);
 }
 
 .calendar__day--sprint-active:hover {
-  background: rgba(108, 92, 231, 0.2);
+  background: rgba(99, 102, 241, 0.14);
 }
 
 /* Sprint inactive */
@@ -164,39 +191,33 @@
 
 /* Weekend */
 .calendar__day--weekend {
-  background: var(--bg-tertiary);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .calendar__day--weekend {
+  background: rgba(241, 245, 249, 0.8);
 }
 
 .calendar__day--weekend.calendar__day--sprint-active {
   background: var(--sprint-active-bg);
 }
 
-/* Sprint boundary (first or last day of sprint) */
-.calendar__day--sprint-start {
-  border-top-left-radius: var(--radius-sm);
-  border-bottom-left-radius: var(--radius-sm);
-}
-
-.calendar__day--sprint-end {
-  border-top-right-radius: var(--radius-sm);
-  border-bottom-right-radius: var(--radius-sm);
-}
-
 /* ============================================================
-   3. EVENT BADGES
+   3. EVENT BADGES (Modern Minimalist Pills)
    ============================================================ */
 
 .event-badge {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: 2px var(--space-2);
+  gap: 5px;
+  padding: 2px 6px;
+  height: 20px;
   background: var(--event-badge-bg);
   border: 1px solid var(--event-badge-border);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-xs);
-  color: var(--event-badge-text);
-  line-height: var(--leading-tight);
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  color: var(--text-primary);
+  line-height: 1;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -205,8 +226,17 @@
 }
 
 .event-badge:hover {
-  background: rgba(59, 130, 246, 0.25);
-  transform: translateX(2px);
+  background: rgba(99, 102, 241, 0.22);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+
+.event-badge__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: #6366f1;
+  flex-shrink: 0;
 }
 
 .event-badge__time {
@@ -220,33 +250,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: var(--font-medium);
 }
 
+/* All day event pill (Emerald) */
 .event-badge--allday {
-  background: rgba(16, 185, 129, 0.15);
-  border-left-color: var(--color-success);
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.22);
   color: var(--text-primary);
 }
 
+.event-badge--allday .event-badge__dot {
+  background: #10b981;
+}
+
 .event-badge--allday:hover {
-  background: rgba(16, 185, 129, 0.25);
-}
-
-.event-badge--allday .event-badge__time {
-  color: var(--color-success);
-  font-size: 9px;
-  font-weight: var(--font-semibold);
-  text-transform: uppercase;
-}
-
-.calendar__day-number--month-start {
-  background: var(--bg-tertiary);
-  padding: 2px var(--space-2) !important;
-  border-radius: var(--radius-sm) !important;
-  font-size: var(--text-xs) !important;
-  font-weight: var(--font-bold) !important;
-  color: var(--color-primary-400) !important;
-  border: 1px solid var(--border-subtle);
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .event-badge--more {
@@ -255,7 +275,7 @@
   color: var(--text-muted);
   font-size: 10px;
   font-weight: var(--font-medium);
-  padding: 1px var(--space-2);
+  padding: 1px 4px;
 }
 
 /* Mobile: event dots instead of badges */
