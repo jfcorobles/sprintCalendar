@@ -154,6 +154,9 @@
 
 .calendar__day:hover {
   background: var(--bg-surface-hover);
+  outline: 1px solid var(--color-primary);
+  outline-offset: -1px;
+  z-index: 2;
 }
 
 .calendar__day-events {

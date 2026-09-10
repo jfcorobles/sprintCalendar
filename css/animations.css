@@ -74,24 +74,6 @@
   }
 }
 
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 8px rgba(108, 92, 231, 0.2);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(108, 92, 231, 0.4);
-  }
-}
-
-@keyframes todayPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0);
-  }
-}
-
 @keyframes toastSlideIn {
   from {
     opacity: 0;
@@ -117,22 +99,11 @@
 @keyframes calendarFadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes dayPopIn {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
   }
 }
 
@@ -142,31 +113,22 @@
 
 /* Calendar grid entrance */
 .calendar__grid {
-  animation: calendarFadeIn 0.4s ease-out;
-}
-
-/* Calendar month transition */
-.calendar__grid.is-transitioning {
-  animation: fadeOut 0.15s ease-out forwards;
-}
-
-.calendar__grid.is-entering {
-  animation: fadeIn 0.25s ease-out forwards;
+  animation: calendarFadeIn 0.25s ease-out;
 }
 
 /* Slide left/right for month navigation */
 .calendar__grid.is-sliding-left {
-  animation: slideLeft 0.3s ease-out;
+  animation: slideLeft 0.25s ease-out;
 }
 
 .calendar__grid.is-sliding-right {
-  animation: slideRight 0.3s ease-out;
+  animation: slideRight 0.25s ease-out;
 }
 
 @keyframes slideLeft {
   from {
     opacity: 0;
-    transform: translateX(30px);
+    transform: translateX(20px);
   }
   to {
     opacity: 1;
@@ -177,7 +139,7 @@
 @keyframes slideRight {
   from {
     opacity: 0;
-    transform: translateX(-30px);
+    transform: translateX(-20px);
   }
   to {
     opacity: 1;
@@ -185,31 +147,13 @@
   }
 }
 
-/* Day cell hover animation */
+/* Day cell hover transition */
 .calendar__day {
-  transition:
-    background-color var(--transition-fast),
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast);
+  transition: background-color var(--transition-fast), outline var(--transition-fast);
 }
 
 .calendar__day:hover {
-  transform: scale(1.02);
   z-index: 1;
-}
-
-.calendar__day:active {
-  transform: scale(0.98);
-}
-
-/* Today pulse */
-.calendar__day--today {
-  animation: todayPulse 3s ease-in-out infinite;
-}
-
-/* Sprint active glow */
-.calendar__day--sprint-active {
-  animation: pulseGlow 4s ease-in-out infinite;
 }
 
 /* ============================================================
