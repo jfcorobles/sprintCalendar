@@ -1,9 +1,4 @@
-/* ============================================================
-   Sprint Calendar — Service Worker
-   Cache-first strategy for static assets, network-first for API
-   ============================================================ */
-
-const CACHE_NAME = 'sprint-calendar-v3';
+const CACHE_NAME = 'sprint-calendar-v4';
 
 const STATIC_ASSETS = [
   './',
@@ -25,6 +20,13 @@ const STATIC_ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
 ];
+
+// Skip waiting message listener
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 // Install: cache static assets and skip waiting immediately
 self.addEventListener('install', (event) => {
@@ -50,13 +52,13 @@ self.addEventListener('activate', (event) => {
 
 // Fetch: network-first with cache fallback for fresh updates
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  // Only handle GET requests
+  if (event.request.method !== 'GET') return;
 
-  // Network-first for all same-origin requests & assets
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        if (response && response.status === 200 && event.request.method === 'GET') {
+        if (response && response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }

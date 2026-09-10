@@ -150,6 +150,17 @@
                 </button>
               </div>
             </div>
+          <hr class="separator">
+
+          <!-- App Version & Update -->
+          <div class="form-group">
+            <label class="form-label">Aplicación</label>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <span class="form-hint" style="margin: 0;">Versión 2.0 (PWA)</span>
+              <button class="btn btn--sm btn--secondary" id="btn-force-update" type="button" onclick="forceAppUpdate()">
+                🔄 Actualizar App
+              </button>
+            </div>
           </div>
         </div>
         <div class="modal__footer">
@@ -317,15 +328,75 @@
   <script src="js/calendar.js"></script>
   <script src="js/app.js"></script>
 
-  <!-- Service Worker Registration -->
+  <!-- Service Worker Registration & Auto-Updater -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-          .then(reg => console.log('SW registered:', reg.scope))
-          .catch(err => console.warn('SW registration failed:', err));
+      window.addEventListener('load', async () => {
+        try {
+          const reg = await navigator.serviceWorker.register('sw.js?v=4');
+
+          // Proactively check for update immediately on launch
+          reg.update();
+
+          // Check for update when user switches back to the app on mobile
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+              reg.update();
+            }
+          });
+
+          // If a new worker is waiting or installing, activate it
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            }
+          });
+        } catch (err) {
+          console.warn('SW registration failed:', err);
+        }
+      });
+
+      // Reload page when new service worker takes control
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
       });
     }
+
+    // Helper for manual update button in Settings
+    window.forceAppUpdate = async function() {
+      const btn = document.getElementById('btn-force-update');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Actualizando...';
+      }
+
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) {
+            await registration.unregister();
+          }
+        } catch (e) {}
+      }
+      if ('caches' in window) {
+        try {
+          const keys = await caches.keys();
+          for (const key of keys) {
+            await caches.delete(key);
+          }
+        } catch (e) {}
+      }
+      window.location.href = window.location.pathname + '?v=' + Date.now();
+    };
   </script>
 </body>
 </html>
