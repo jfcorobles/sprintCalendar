@@ -255,6 +255,9 @@
   text-overflow: ellipsis;
   cursor: pointer;
   transition: all var(--transition-fast);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .event-badge:hover {
@@ -283,6 +286,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: var(--font-medium);
+  min-width: 0;
+  flex: 1;
 }
 
 /* All day event pill (VS Code Teal Syntax) */
@@ -319,8 +324,11 @@
     gap: 3px;
     border-radius: 2px;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     margin-bottom: 1px;
     line-height: 13px;
+    box-sizing: border-box;
   }
 
   .event-badge__dot {
@@ -334,12 +342,14 @@
   }
 
   .event-badge__title {
-    display: inline-block;
+    display: block;
     font-size: 9px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     line-height: 13px;
+    min-width: 0;
+    flex: 1;
   }
 
   .event-badge--more {
@@ -355,6 +365,8 @@
     flex-direction: column;
     gap: 1px;
     overflow: hidden;
+    min-width: 0;
+    width: 100%;
   }
 }
 
