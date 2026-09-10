@@ -14,26 +14,30 @@ const App = (() => {
     // 2. Modal system
     Modal.init();
 
-    // 3. Calendar (renders the grid)
-    Calendar.init();
-
-    // 4. Google Auth (loads GIS SDK)
+    // 3. Google Auth (restores session & loads GIS SDK)
     GoogleAuth.init();
+
+    // 4. Calendar (renders the grid + automatically loads events if session active)
+    Calendar.init();
 
     // 5. Connect event handlers
     bindSettingsModal();
     bindCreateEventModal();
     bindGoogleAuthButtons();
 
-    // 6. Listen for auth changes
-    GoogleAuth.onAuthChange((isAuthed) => {
+    // 6. Listen for auth changes (manual sign in / sign out)
+    GoogleAuth.onAuthChange((isAuthed, isUserAction) => {
       if (isAuthed) {
         Calendar.loadEvents();
-        showToast('Google Calendar conectado', 'success');
+        if (isUserAction) {
+          showToast('Google Calendar conectado', 'success');
+        }
       } else {
         GoogleCalendar.clearCache();
         Calendar.refresh();
-        showToast('Google Calendar desconectado', 'info');
+        if (isUserAction) {
+          showToast('Google Calendar desconectado', 'info');
+        }
       }
     });
 

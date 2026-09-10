@@ -5,9 +5,25 @@
 
 const GoogleCalendar = (() => {
   const API_BASE = 'https://www.googleapis.com/calendar/v3';
+  const CACHE_STORAGE_KEY = 'sprintCalendar_events_cache';
 
-  // Cache events per month to avoid unnecessary API calls
-  let eventsCache = {};
+  // Load initial cache from localStorage if available
+  let eventsCache = (() => {
+    try {
+      const raw = localStorage.getItem(CACHE_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  })();
+
+  function saveCacheToStorage() {
+    try {
+      localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(eventsCache));
+    } catch (e) {
+      console.warn('GoogleCalendar: Failed to save events to storage', e);
+    }
+  }
 
   /**
    * Get events for a specific month.
@@ -67,13 +83,15 @@ const GoogleCalendar = (() => {
       const data = await response.json();
       const events = (data.items || []).map(parseEvent);
 
-      // Cache the results
+      // Cache the results and persist
       eventsCache[cacheKey] = events;
+      saveCacheToStorage();
 
       return events;
     } catch (error) {
       console.error('GoogleCalendar: Failed to fetch events', error);
-      return [];
+      // Return cached events if available even on network error
+      return eventsCache[cacheKey] || [];
     }
   }
 
@@ -130,6 +148,7 @@ const GoogleCalendar = (() => {
       const eventDate = new Date(date);
       const cacheKey = `${eventDate.getFullYear()}-${eventDate.getMonth()}`;
       delete eventsCache[cacheKey];
+      saveCacheToStorage();
 
       return parseEvent(created);
     } catch (error) {
@@ -187,6 +206,9 @@ const GoogleCalendar = (() => {
    */
   function clearCache() {
     eventsCache = {};
+    try {
+      localStorage.removeItem(CACHE_STORAGE_KEY);
+    } catch (e) {}
   }
 
   return {
