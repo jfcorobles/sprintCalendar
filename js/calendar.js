@@ -6,6 +6,7 @@
 const Calendar = (() => {
   let focusDate = new Date();
   let slideDirection = null; // 'left' | 'right' | null
+  let isManualMonthNav = false; // true when user explicitly navigates month-by-month
   let currentGridRange = { startDate: new Date(), endDate: new Date() };
 
   const MONTH_NAMES = [
@@ -46,55 +47,37 @@ const Calendar = (() => {
    */
   function init() {
     focusDate = new Date();
+    isManualMonthNav = false;
     render();
     bindNavigation();
   }
 
   /**
-   * Navigate to previous sprint / month
+   * Navigate to previous month (complete calendar month)
    */
   function prevMonth() {
     slideDirection = 'right';
-    if (Storage.hasSprintConfig()) {
-      const currentSprint = Sprint.getSprintForDate(focusDate);
-      if (currentSprint) {
-        const prevSprintDate = new Date(currentSprint.startDate);
-        prevSprintDate.setDate(prevSprintDate.getDate() - Math.max(1, Math.floor(currentSprint.totalDays / 2)));
-        focusDate = prevSprintDate;
-      } else {
-        focusDate.setMonth(focusDate.getMonth() - 1);
-      }
-    } else {
-      focusDate.setMonth(focusDate.getMonth() - 1);
-    }
+    isManualMonthNav = true;
+    focusDate = new Date(focusDate.getFullYear(), focusDate.getMonth() - 1, 1);
     render();
   }
 
   /**
-   * Navigate to next sprint / month
+   * Navigate to next month (complete calendar month)
    */
   function nextMonth() {
     slideDirection = 'left';
-    if (Storage.hasSprintConfig()) {
-      const currentSprint = Sprint.getSprintForDate(focusDate);
-      if (currentSprint) {
-        const nextSprintDate = new Date(currentSprint.endDate);
-        nextSprintDate.setDate(nextSprintDate.getDate() + Math.max(1, Math.floor(currentSprint.totalDays / 2)));
-        focusDate = nextSprintDate;
-      } else {
-        focusDate.setMonth(focusDate.getMonth() + 1);
-      }
-    } else {
-      focusDate.setMonth(focusDate.getMonth() + 1);
-    }
+    isManualMonthNav = true;
+    focusDate = new Date(focusDate.getFullYear(), focusDate.getMonth() + 1, 1);
     render();
   }
 
   /**
-   * Go to today's active sprint
+   * Go to today's active sprint / month
    */
   function goToToday() {
     slideDirection = null;
+    isManualMonthNav = false;
     focusDate = new Date();
     render();
   }
@@ -132,7 +115,8 @@ const Calendar = (() => {
     const display = document.getElementById('month-display');
     if (!display) return;
 
-    if (Storage.hasSprintConfig()) {
+    // If manual month navigation, always show that exact month
+    if (!isManualMonthNav && Storage.hasSprintConfig()) {
       const sprint = Sprint.getSprintForDate(focusDate);
       if (sprint) {
         const startMonth = sprint.startDate.getMonth();
@@ -140,14 +124,15 @@ const Calendar = (() => {
         const startYear = sprint.startDate.getFullYear();
         const endYear = sprint.endDate.getFullYear();
 
-        if (startMonth === endMonth && startYear === endYear) {
-          display.textContent = `${MONTH_NAMES[startMonth]} ${startYear}`;
-        } else if (startYear === endYear) {
-          display.textContent = `${MONTH_NAMES[startMonth]} – ${MONTH_NAMES[endMonth]} ${startYear}`;
-        } else {
-          display.textContent = `${MONTH_NAMES[startMonth]} ${startYear} – ${MONTH_NAMES[endMonth]} ${endYear}`;
+        // Only show dual-month title if the sprint actually spans across two different months
+        if (startMonth !== endMonth || startYear !== endYear) {
+          if (startYear === endYear) {
+            display.textContent = `${MONTH_NAMES[startMonth]} – ${MONTH_NAMES[endMonth]} ${startYear}`;
+          } else {
+            display.textContent = `${MONTH_NAMES[startMonth]} ${startYear} – ${MONTH_NAMES[endMonth]} ${endYear}`;
+          }
+          return;
         }
-        return;
       }
     }
 
@@ -155,7 +140,7 @@ const Calendar = (() => {
   }
 
   /**
-   * Render the calendar grid with the sprint always centered
+   * Render the calendar grid
    */
   function renderGrid() {
     const grid = document.getElementById('calendar-grid');
@@ -173,29 +158,40 @@ const Calendar = (() => {
     let gridStartDate;
     let totalWeeks = 5;
 
-    const focusedSprint = Storage.hasSprintConfig() ? Sprint.getSprintForDate(focusDate) : null;
+    const focusedSprint = (!isManualMonthNav && Storage.hasSprintConfig())
+      ? Sprint.getSprintForDate(focusDate)
+      : null;
 
-    if (focusedSprint) {
-      // Calculate sprint week span (Monday of start week to Sunday of end week)
+    // Check if sprint crosses month boundary
+    const isCrossMonthSprint = focusedSprint && (
+      focusedSprint.startDate.getMonth() !== focusedSprint.endDate.getMonth() ||
+      focusedSprint.startDate.getFullYear() !== focusedSprint.endDate.getFullYear()
+    );
+
+    if (isCrossMonthSprint) {
+      // Continuous multi-week view centered on the cross-month sprint
       const sprintMonday = getMonday(focusedSprint.startDate);
       const sprintSunday = getSunday(focusedSprint.endDate);
       const sprintWeeks = Math.round((sprintSunday.getTime() - sprintMonday.getTime()) / (7 * 86400000)) + 1;
 
-      // Ensure grid has enough rows (at least sprintWeeks + 2 for context before & after)
       totalWeeks = Math.max(5, sprintWeeks + 2);
-
-      // Center the sprint vertically in the grid
       const weeksBefore = Math.max(1, Math.floor((totalWeeks - sprintWeeks) / 2));
 
       gridStartDate = new Date(sprintMonday);
       gridStartDate.setDate(gridStartDate.getDate() - (weeksBefore * 7));
     } else {
-      // Fallback: standard month centering
+      // Standard full calendar month (1st of month to end of month)
       const year = focusDate.getFullYear();
       const month = focusDate.getMonth();
       const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+
       gridStartDate = getMonday(firstDayOfMonth);
-      totalWeeks = 5;
+      const gridEndSunday = getSunday(lastDayOfMonth);
+
+      // Total weeks needed to display the full month
+      totalWeeks = Math.round((gridEndSunday.getTime() - gridStartDate.getTime()) / (7 * 86400000)) + 1;
+      totalWeeks = Math.max(5, Math.min(6, totalWeeks));
     }
 
     const totalDays = totalWeeks * 7;
@@ -613,12 +609,94 @@ const Calendar = (() => {
   }
 
   /**
-   * Bind navigation buttons
+   * Bind navigation buttons and touch drag gestures
    */
   function bindNavigation() {
     document.getElementById('btn-prev-month')?.addEventListener('click', prevMonth);
     document.getElementById('btn-next-month')?.addEventListener('click', nextMonth);
     document.getElementById('btn-today')?.addEventListener('click', goToToday);
+    bindTouchGestures();
+  }
+
+  /**
+   * Bind swipe / drag gesture for mobile and desktop
+   */
+  function bindTouchGestures() {
+    const calendarEl = document.querySelector('.calendar') || document.getElementById('calendar-grid');
+    if (!calendarEl) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isSwiping = false;
+
+    calendarEl.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+      isSwiping = true;
+    }, { passive: true });
+
+    calendarEl.addEventListener('touchend', (e) => {
+      if (!isSwiping || e.changedTouches.length !== 1) return;
+      isSwiping = false;
+
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      const elapsedTime = Date.now() - touchStartTime;
+
+      // Swipe detected if: > 40px horizontal, mostly horizontal (not vertical scroll), within 500ms
+      if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2 && elapsedTime < 500) {
+        if (deltaX < 0) {
+          // Swipe left -> next month
+          nextMonth();
+        } else {
+          // Swipe right -> prev month
+          prevMonth();
+        }
+      }
+    }, { passive: true });
+
+    // Mouse drag support for desktop
+    let mouseStartX = 0;
+    let mouseStartY = 0;
+    let isMouseDown = false;
+    let hasDragged = false;
+
+    calendarEl.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      // Don't drag if clicking buttons or links
+      if (e.target.closest('button, a, input')) return;
+      mouseStartX = e.clientX;
+      mouseStartY = e.clientY;
+      isMouseDown = true;
+      hasDragged = false;
+    });
+
+    calendarEl.addEventListener('mousemove', (e) => {
+      if (!isMouseDown) return;
+      if (Math.abs(e.clientX - mouseStartX) > 10) {
+        hasDragged = true;
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+      const deltaX = e.clientX - mouseStartX;
+      const deltaY = e.clientY - mouseStartY;
+
+      if (hasDragged && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+        if (deltaX < 0) {
+          nextMonth();
+        } else {
+          prevMonth();
+        }
+      }
+    });
   }
 
   /**

@@ -111,6 +111,7 @@
 
 .calendar {
   width: 100%;
+  touch-action: pan-y;
 }
 
 .calendar__weekdays {
@@ -118,6 +119,8 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
   margin-bottom: var(--space-1);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .calendar__weekday {
@@ -143,6 +146,9 @@
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   width: 100%;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .calendar__day {
