@@ -206,7 +206,14 @@
               <input type="date" class="form-input" id="event-date" required>
             </div>
 
-            <div class="form-row">
+            <div class="form-checkbox-group">
+              <label class="form-checkbox-label" for="event-all-day">
+                <input type="checkbox" id="event-all-day" class="form-checkbox">
+                <span>Todo el día</span>
+              </label>
+            </div>
+
+            <div class="form-row" id="event-time-row">
               <div class="form-group">
                 <label class="form-label" for="event-start-time">Hora inicio</label>
                 <input type="time" class="form-input" id="event-start-time" value="09:00">

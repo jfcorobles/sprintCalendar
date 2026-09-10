@@ -113,6 +113,15 @@ const App = (() => {
    * Bind create event modal interactions
    */
   function bindCreateEventModal() {
+    const allDayCheckbox = document.getElementById('event-all-day');
+    const timeRow = document.getElementById('event-time-row');
+
+    allDayCheckbox?.addEventListener('change', () => {
+      if (timeRow) {
+        timeRow.style.display = allDayCheckbox.checked ? 'none' : '';
+      }
+    });
+
     document.getElementById('btn-create-event')?.addEventListener('click', async () => {
       await handleCreateEvent();
     });
@@ -124,6 +133,7 @@ const App = (() => {
   async function handleCreateEvent() {
     const titleInput = document.getElementById('event-title');
     const dateInput = document.getElementById('event-date');
+    const allDayCheckbox = document.getElementById('event-all-day');
     const startTimeInput = document.getElementById('event-start-time');
     const endTimeInput = document.getElementById('event-end-time');
     const descriptionInput = document.getElementById('event-description');
@@ -138,12 +148,16 @@ const App = (() => {
     }
     if (errorEl) errorEl.style.display = 'none';
 
-    // Validate times
-    const startTime = startTimeInput?.value || '09:00';
-    const endTime = endTimeInput?.value || '10:00';
-    if (endTime <= startTime) {
-      showToast('La hora de fin debe ser posterior a la de inicio', 'error');
-      return;
+    const isAllDay = allDayCheckbox ? allDayCheckbox.checked : false;
+    let startTime = startTimeInput?.value || '09:00';
+    let endTime = endTimeInput?.value || '10:00';
+
+    // Validate times if not all day
+    if (!isAllDay) {
+      if (endTime <= startTime) {
+        showToast('La hora de fin debe ser posterior a la de inicio', 'error');
+        return;
+      }
     }
 
     // Check auth
@@ -163,14 +177,20 @@ const App = (() => {
       await GoogleCalendar.createEvent({
         title,
         date: dateInput?.value,
-        startTime,
-        endTime,
+        startTime: isAllDay ? undefined : startTime,
+        endTime: isAllDay ? undefined : endTime,
+        isAllDay,
         description: descriptionInput?.value || '',
       });
 
       // Clear form
       if (titleInput) titleInput.value = '';
       if (descriptionInput) descriptionInput.value = '';
+      if (allDayCheckbox) {
+        allDayCheckbox.checked = false;
+        const timeRow = document.getElementById('event-time-row');
+        if (timeRow) timeRow.style.display = '';
+      }
       if (startTimeInput) startTimeInput.value = '09:00';
       if (endTimeInput) endTimeInput.value = '10:00';
 

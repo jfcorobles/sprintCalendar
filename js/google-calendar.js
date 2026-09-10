@@ -26,28 +26,28 @@ const GoogleCalendar = (() => {
   }
 
   /**
-   * Get events for a specific month.
+   * Get events for a specific date range.
    * 
-   * @param {number} year
-   * @param {number} month - 0-indexed
+   * @param {Date} startDate
+   * @param {Date} endDate
    * @returns {Promise<Array<{id, title, date, startTime, endTime, isAllDay}>>}
    */
-  async function getEventsForMonth(year, month) {
+  async function getEventsForRange(startDate, endDate) {
     if (!GoogleAuth.isAuthenticated()) {
       return [];
     }
 
-    const cacheKey = `${year}-${month}`;
+    const startIso = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0).toISOString();
+    const endIso = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59).toISOString();
+
+    const cacheKey = `range_${startIso.split('T')[0]}_${endIso.split('T')[0]}`;
     if (eventsCache[cacheKey]) {
       return eventsCache[cacheKey];
     }
 
-    const timeMin = new Date(year, month, 1).toISOString();
-    const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
-
     const params = new URLSearchParams({
-      timeMin,
-      timeMax,
+      timeMin: startIso,
+      timeMax: endIso,
       singleEvents: 'true',
       orderBy: 'startTime',
       maxResults: '250',
@@ -90,15 +90,27 @@ const GoogleCalendar = (() => {
       return events;
     } catch (error) {
       console.error('GoogleCalendar: Failed to fetch events', error);
-      // Return cached events if available even on network error
       return eventsCache[cacheKey] || [];
     }
   }
 
   /**
+   * Get events for a specific month.
+   * 
+   * @param {number} year
+   * @param {number} month - 0-indexed
+   * @returns {Promise<Array<{id, title, date, startTime, endTime, isAllDay}>>}
+   */
+  async function getEventsForMonth(year, month) {
+    const start = new Date(year, month, 1);
+    const end = new Date(year, month + 1, 0);
+    return getEventsForRange(start, end);
+  }
+
+  /**
    * Create a new event on the user's primary calendar.
    * 
-   * @param {{title: string, date: string, startTime: string, endTime: string, description?: string}} eventData
+   * @param {{title: string, date: string, startTime?: string, endTime?: string, isAllDay?: boolean, description?: string}} eventData
    * @returns {Promise<object|null>}
    */
   async function createEvent(eventData) {
@@ -106,20 +118,40 @@ const GoogleCalendar = (() => {
       throw new Error('Not authenticated');
     }
 
-    const { title, date, startTime, endTime, description } = eventData;
+    const { title, date, startTime, endTime, isAllDay, description } = eventData;
 
-    const body = {
-      summary: title,
-      description: description || '',
-      start: {
-        dateTime: `${date}T${startTime}:00`,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-      end: {
-        dateTime: `${date}T${endTime}:00`,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-    };
+    let body;
+    if (isAllDay) {
+      // For all-day events, Google Calendar API expects start.date and end.date (exclusive next day)
+      const startDate = new Date(date + 'T00:00:00');
+      const nextDay = new Date(startDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayStr = nextDay.toISOString().split('T')[0];
+
+      body = {
+        summary: title,
+        description: description || '',
+        start: {
+          date: date,
+        },
+        end: {
+          date: nextDayStr,
+        },
+      };
+    } else {
+      body = {
+        summary: title,
+        description: description || '',
+        start: {
+          dateTime: `${date}T${startTime}:00`,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        end: {
+          dateTime: `${date}T${endTime}:00`,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+      };
+    }
 
     try {
       const response = await fetch(
@@ -144,11 +176,8 @@ const GoogleCalendar = (() => {
 
       const created = await response.json();
 
-      // Invalidate cache for the event's month
-      const eventDate = new Date(date);
-      const cacheKey = `${eventDate.getFullYear()}-${eventDate.getMonth()}`;
-      delete eventsCache[cacheKey];
-      saveCacheToStorage();
+      // Clear cached ranges so new event appears immediately
+      clearCache();
 
       return parseEvent(created);
     } catch (error) {
@@ -212,6 +241,7 @@ const GoogleCalendar = (() => {
   }
 
   return {
+    getEventsForRange,
     getEventsForMonth,
     createEvent,
     getEventsForDate,
